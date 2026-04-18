@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora EQ Shelving | Borgoña</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --cream-light: #FDF8F3;
+            --cream: #F5EDE4;
+            --cream-dark: #E8DDD0;
+            --sage-light: #C5D4C0;
+            --sage: #9BB08F;
+            --sage-dark: #7A9A6D;
+            --terracotta-light: #D4847C;
+            --terracotta: #B85C50;
+            --terracotta-dark: #8B3A30;
+            --wood-light: #D4B896;
+            --wood: #A67B5B;
+            --wood-dark: #6B4423;
+            --text-primary: #2C2420;
+            --text-secondary: #5C544D;
+            --text-muted: #8A817A;
+            --border: #D4C8BC;
+            --shadow-sm: 0 1px 3px rgba(44,36,32,0.08);
+            --shadow-md: 0 4px 12px rgba(44,36,32,0.12);
+            --shadow-lg: 0 8px 24px rgba(44,36,32,0.16);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--cream-light) 0%, var(--cream) 100%);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        h1 { font-size: 18px; font-weight: 700; }
+        h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+
+        .header {
+            background: linear-gradient(135deg, var(--terracotta) 0%, var(--terracotta-dark) 100%);
+            padding: 14px 24px;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header h1 { color: var(--cream-light); margin-bottom: 2px; }
+        .header span { font-size: 11px; opacity: 0.85; color: var(--cream-light); }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 410px 1fr;
+            gap: 24px;
+            padding: 24px;
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        .control-panel { display: flex; flex-direction: column; gap: 16px; }
+
+        .panel-section {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 18px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+        }
+
+        .panel-section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--cream-dark);
+        }
+        .panel-section-header svg { width: 16px; height: 16px; color: var(--terracotta); }
+
+        .type-toggle {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: var(--cream-dark);
+            border-radius: var(--radius-sm);
+            padding: 3px;
+            gap: 3px;
+            margin-bottom: 20px;
+        }
+        .type-btn {
+            padding: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+            letter-spacing: 0.2px;
+        }
+        .type-btn.active {
+            background: white;
+            color: var(--terracotta-dark);
+            box-shadow: var(--shadow-sm);
+        }
+        .type-btn:not(.active):hover { color: var(--text-secondary); }
+
+        .slider-container { margin-bottom: 22px; }
+        .slider-container:last-of-type { margin-bottom: 0; }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .slider-header label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+
+        .slider-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            background: var(--sage-dark);
+            padding: 4px 8px;
+            border-radius: 10px;
+            min-width: 72px;
+            text-align: center;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: var(--cream-dark);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            transition: background 0.2s;
+        }
+        input[type="range"]:hover { background: var(--border); }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--terracotta);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.1s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+        .presets-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .preset-btn {
+            background: var(--cream-light);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .preset-btn:hover { border-color: var(--terracotta-light); color: var(--terracotta); }
+        .preset-btn.active {
+            background: var(--terracotta);
+            border-color: var(--terracotta);
+            color: white;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, var(--sage-light) 0%, var(--sage) 100%);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            transition: all 0.3s ease;
+        }
+        .result-card.highlight { background: linear-gradient(135deg, var(--terracotta-light) 0%, var(--terracotta) 100%); }
+        .result-card.wood { background: linear-gradient(135deg, var(--wood-light) 0%, var(--wood) 100%); }
+
+        .result-label { font-size: 10px; font-weight: 500; color: white; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }
+        .result-value { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; color: white; }
+
+        .info-box {
+            background: linear-gradient(135deg, var(--sage-light) 0%, var(--sage) 100%);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            color: white;
+            font-size: 12px;
+            line-height: 1.65;
+            box-shadow: var(--shadow-md);
+            transition: background 0.4s ease;
+        }
+        .info-box strong { display: block; font-size: 13px; margin-bottom: 5px; }
+
+        .main-content { display: flex; flex-direction: column; gap: 16px; }
+
+        .chart-container {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border);
+            padding: 24px 24px 20px;
+            height: 420px;
+            position: relative;
+        }
+
+        .formula-section {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .formula-header {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .coeff-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .coeff-item {
+            background: var(--cream-light);
+            border: 1px solid var(--cream-dark);
+            border-radius: var(--radius-sm);
+            padding: 10px 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            transition: border-color 0.2s;
+        }
+        .coeff-item:hover { border-color: var(--border); }
+
+        .coeff-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .coeff-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--terracotta-dark);
+            text-align: center;
+        }
+        .coeff-note {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            text-align: center;
+        }
+
+        .math-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            background: var(--cream-light);
+            padding: 16px;
+            border-radius: var(--radius-sm);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 15px;
+            color: var(--text-primary);
+            flex-wrap: wrap;
+        }
+
+        .math-fraction {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+            margin: 0 4px;
+        }
+        .math-num { padding: 0 4px; border-bottom: 2px solid var(--text-primary); }
+        .math-den { padding: 0 4px; }
+
+        .math-sqrt { display: inline-flex; align-items: center; }
+        .math-sqrt-sign { font-size: 24px; font-weight: 300; margin-right: 2px; transform: translateY(2px); }
+        .math-sqrt-content { border-top: 1px solid var(--text-primary); padding-top: 4px; }
+
+        .var-highlight { color: var(--terracotta); font-weight: 700; }
+        .var-highlight.sage { color: var(--sage-dark); }
+
+        .variables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 10px;
+            padding-top: 14px;
+            border-top: 1px solid var(--cream-dark);
+        }
+
+        .formula-var {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .formula-var span {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--terracotta);
+            min-width: 22px;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 1080px) {
+            .app-container { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+            .coeff-grid { grid-template-columns: repeat(3, 1fr); }
+            .results-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h4l3-8 4 16 3-8h4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>
+            <h1>Calculadora EQ Shelving</h1>
+            <span>Sistema de Diseño Borgoña · High / Low Shelf · Coeficientes Biquad · Fc Ajustable</span>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <aside class="control-panel">
+
+            <div class="panel-section">
+                <div class="panel-section-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
+                    </svg>
+                    <h3>Tipo y Parámetros</h3>
+                </div>
+
+                <div class="type-toggle">
+                    <button class="type-btn active" data-type="high">▲ High Shelf</button>
+                    <button class="type-btn" data-type="low">▼ Low Shelf</button>
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <label>Ganancia (dB)</label>
+                        <span class="slider-value" id="val-gain">+6.0 dB</span>
+                    </div>
+                    <input type="range" id="input-gain" min="-18" max="18" step="0.5" value="6">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <label>Frecuencia de Corte (Fc)</label>
+                        <span class="slider-value" style="background: var(--wood)" id="val-fc">3.0 kHz</span>
+                    </div>
+                    <input type="range" id="input-fc" min="0" max="1000" step="1" value="725">
+                </div>
+
+                <div class="slider-container" style="margin-bottom: 0;">
+                    <div class="slider-header">
+                        <label>Pendiente / Slope (S)</label>
+                        <span class="slider-value" style="background: var(--terracotta)" id="val-slope">1.00</span>
+                    </div>
+                    <input type="range" id="input-slope" min="0.1" max="5.0" step="0.1" value="1.0">
+                    <div class="presets-grid">
+                        <button class="preset-btn" data-slope="0.5">Suave (0.5)</button>
+                        <button class="preset-btn active" data-slope="1.0">Butterworth (1.0)</button>
+                        <button class="preset-btn" data-slope="2.0">Resonante (2.0)</button>
+                        <button class="preset-btn" data-slope="3.5">Extremo (3.5)</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-grid">
+                <div class="result-card">
+                    <span class="result-label">Variable A</span>
+                    <span class="result-value" id="res-a">1.412</span>
+                </div>
+                <div class="result-card highlight">
+                    <span class="result-label">Factor Q</span>
+                    <span class="result-value" id="res-q">0.707</span>
+                </div>
+                <div class="result-card wood">
+                    <span class="result-label">Alpha α</span>
+                    <span class="result-value" id="res-alpha">0.217</span>
+                </div>
+            </div>
+
+            <div class="info-box" id="info-feedback">
+                <strong>💡 Análisis de la Curva</strong>
+                <span>Con S = 1, Q es exactamente 0.707 (Butterworth). Obtenemos la máxima planitud y una transición suave sin resonancias.</span>
+            </div>
+
+        </aside>
+
+        <main class="main-content">
+
+            <div class="chart-container">
+                <canvas id="eqChart"></canvas>
+            </div>
+
+            <div class="formula-section">
+                <div class="formula-header">Coeficientes Biquad Normalizados (÷ a₀)</div>
+                <div class="coeff-grid">
+                    <div class="coeff-item">
+                        <span class="coeff-label">b₀</span>
+                        <span class="coeff-val" id="c-b0">—</span>
+                    </div>
+                    <div class="coeff-item">
+                        <span class="coeff-label">b₁</span>
+                        <span class="coeff-val" id="c-b1">—</span>
+                    </div>
+                    <div class="coeff-item">
+                        <span class="coeff-label">b₂</span>
+                        <span class="coeff-val" id="c-b2">—</span>
+                    </div>
+                    <div class="coeff-item">
+                        <span class="coeff-label">a₁</span>
+                        <span class="coeff-val" id="c-a1">—</span>
+                    </div>
+                    <div class="coeff-item">
+                        <span class="coeff-label">a₂</span>
+                        <span class="coeff-val" id="c-a2">—</span>
+                    </div>
+                </div>
+                <p class="coeff-note">H(z) = (b₀ + b₁z⁻¹ + b₂z⁻²) / (1 + a₁z⁻¹ + a₂z⁻²) · Fs = 48 kHz</p>
+            </div>
+
+            <div class="formula-section">
+                <div class="formula-header">Fórmula General del Filtro Shelving</div>
+                <div class="math-display">
+                    <div class="math-fraction">
+                        <span class="math-num">1</span>
+                        <span class="math-den">Q</span>
+                    </div>
+                    <span>=</span>
+                    <div class="math-sqrt">
+                        <span class="math-sqrt-sign">√</span>
+                        <span class="math-sqrt-content">
+                            [&thinsp;<span class="var-highlight sage">A</span>&thinsp;+&thinsp;<div class="math-fraction" style="font-size:13px"><span class="math-num">1</span><span class="math-den var-highlight sage">A</span></div>&thinsp;]&thinsp;×&thinsp;[&thinsp;<div class="math-fraction" style="font-size:13px"><span class="math-num">1</span><span class="math-den var-highlight">S</span></div>&thinsp;−&thinsp;1&thinsp;]&thinsp;+&thinsp;2
+                        </span>
+                    </div>
+                </div>
+                <div class="variables-grid">
+                    <div class="formula-var"><span>Q</span> Factor de calidad — forma de la rodilla</div>
+                    <div class="formula-var"><span>S</span> Slope del estante (1 = Butterworth)</div>
+                    <div class="formula-var"><span>A</span> Ganancia lineal: 10^(dB/40)</div>
+                    <div class="formula-var"><span>Fc</span> Frecuencia de rodilla ajustable</div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        const FS = 48000;
+        let currentType = 'high';
+        let currentFc = 3000;
+
+        const inGain   = document.getElementById('input-gain');
+        const inSlope  = document.getElementById('input-slope');
+        const inFc     = document.getElementById('input-fc');
+        const valGain  = document.getElementById('val-gain');
+        const valSlope = document.getElementById('val-slope');
+        const valFc    = document.getElementById('val-fc');
+        const resA     = document.getElementById('res-a');
+        const resQ     = document.getElementById('res-q');
+        const resAlpha = document.getElementById('res-alpha');
+        const cB0 = document.getElementById('c-b0');
+        const cB1 = document.getElementById('c-b1');
+        const cB2 = document.getElementById('c-b2');
+        const cA1 = document.getElementById('c-a1');
+        const cA2 = document.getElementById('c-a2');
+        const infoFeedback  = document.getElementById('info-feedback');
+        const presetBtns    = document.querySelectorAll('.preset-btn');
+        const typeBtns      = document.querySelectorAll('.type-btn');
+
+        const cs = getComputedStyle(document.body);
+        const colorTerracotta = cs.getPropertyValue('--terracotta').trim();
+        const colorSage       = cs.getPropertyValue('--sage').trim();
+        const colorCreamDark  = cs.getPropertyValue('--cream-dark').trim();
+        const colorText       = cs.getPropertyValue('--text-primary').trim();
+        const colorWood       = cs.getPropertyValue('--wood').trim();
+
+        const fcMarkerPlugin = {
+            id: 'fcMarker',
+            afterDraw(chart) {
+                const { ctx, scales: { x, y } } = chart;
+                const xp = x.getPixelForValue(currentFc);
+                if (xp < x.left || xp > x.right) return;
+
+                ctx.save();
+                ctx.strokeStyle = 'rgba(166,123,91,0.55)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([5, 4]);
+                ctx.beginPath();
+                ctx.moveTo(xp, y.top);
+                ctx.lineTo(xp, y.bottom);
+                ctx.stroke();
+
+                const lbl = currentFc >= 1000
+                    ? 'Fc=' + (currentFc / 1000).toFixed(1) + 'k'
+                    : 'Fc=' + Math.round(currentFc);
+                ctx.setLineDash([]);
+                ctx.fillStyle = 'rgba(107,68,35,0.75)';
+                ctx.font = "10px 'JetBrains Mono', monospace";
+                ctx.textAlign = 'center';
+                ctx.fillText(lbl, xp, y.top + 13);
+                ctx.restore();
+            }
+        };
+
+        const zeroDashPlugin = {
+            id: 'zeroDash',
+            afterDraw(chart) {
+                const { ctx, scales: { x, y } } = chart;
+                const y0 = y.getPixelForValue(0);
+                ctx.save();
+                ctx.strokeStyle = 'rgba(44,36,32,0.18)';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.moveTo(x.left, y0);
+                ctx.lineTo(x.right, y0);
+                ctx.stroke();
+                ctx.restore();
+            }
+        };
+
+        const ctx = document.getElementById('eqChart').getContext('2d');
+        const eqChart = new Chart(ctx, {
+            type: 'line',
+            plugins: [fcMarkerPlugin, zeroDashPlugin],
+            data: {
+                datasets: [{
+                    label: 'High Shelf — Magnitud',
+                    data: [],
+                    borderColor: colorTerracotta,
+                    backgroundColor: 'rgba(184,92,80,0.08)',
+                    borderWidth: 2.5,
+                    fill: true,
+                    pointRadius: 0,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                animation: false,
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: {
+                    legend: {
+                        labels: {
+                            font: { family: "'DM Sans', sans-serif", size: 12 },
+                            color: colorText,
+                            usePointStyle: true,
+                            pointStyleWidth: 16
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: colorText,
+                        padding: 10,
+                        titleFont: { family: "'DM Sans', sans-serif", size: 12 },
+                        bodyFont: { family: "'JetBrains Mono', monospace", size: 12 },
+                        callbacks: {
+                            title: (items) => {
+                                const hz = items[0].parsed.x;
+                                return hz >= 1000 ? (hz / 1000).toFixed(2) + ' kHz' : Math.round(hz) + ' Hz';
+                            },
+                            label: (item) => ` Magnitud: ${item.parsed.y >= 0 ? '+' : ''}${item.parsed.y.toFixed(2)} dB`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'logarithmic',
+                        min: 20,
+                        max: 20000,
+                        grid: { color: colorCreamDark },
+                        ticks: {
+                            color: colorText,
+                            font: { family: "'JetBrains Mono', monospace", size: 10 },
+                            maxRotation: 0,
+                            callback(val) {
+                                const marks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+                                if (!marks.includes(+val)) return '';
+                                return val >= 1000 ? (val / 1000) + 'k' : val;
+                            }
+                        }
+                    },
+                    y: {
+                        min: -20,
+                        max: 20,
+                        grid: { color: colorCreamDark },
+                        ticks: {
+                            color: colorText,
+                            font: { family: "'JetBrains Mono', monospace", size: 10 },
+                            stepSize: 5,
+                            callback: (v) => (v > 0 ? '+' : '') + v + ' dB'
+                        }
+                    }
+                }
+            }
+        });
+
+        function fcFromSlider(v) {
+            return 20 * Math.pow(1000, v / 1000);
+        }
+
+        function formatHz(hz) {
+            if (hz >= 1000) return (hz / 1000).toFixed(1) + ' kHz';
+            if (hz >= 100)  return Math.round(hz) + ' Hz';
+            return hz.toFixed(1) + ' Hz';
+        }
+
+        function updateActivePreset(slope) {
+            presetBtns.forEach(btn => {
+                btn.classList.toggle('active', parseFloat(btn.dataset.slope) === parseFloat(slope));
+            });
+        }
+
+        presetBtns.forEach(btn => btn.addEventListener('click', e => {
+            inSlope.value = e.currentTarget.dataset.slope;
+            updateAll();
+        }));
+
+        typeBtns.forEach(btn => btn.addEventListener('click', e => {
+            currentType = e.currentTarget.dataset.type;
+            typeBtns.forEach(b => b.classList.toggle('active', b.dataset.type === currentType));
+            updateAll();
+        }));
+
+        function calcBiquad(type, A, Q, fc) {
+            const w0    = 2 * Math.PI * fc / FS;
+            const cosw  = Math.cos(w0);
+            const sinw  = Math.sin(w0);
+            const Qval  = Q === Infinity ? 10000 : Q;
+            const alpha = sinw / (2 * Qval);
+            const sqA2a = 2 * Math.sqrt(A) * alpha;
+
+            let b0, b1, b2, a0, a1, a2;
+
+            if (type === 'high') {
+                b0 =  A * ((A + 1) + (A - 1) * cosw + sqA2a);
+                b1 = -2 * A * ((A - 1) + (A + 1) * cosw);
+                b2 =  A * ((A + 1) + (A - 1) * cosw - sqA2a);
+                a0 =      (A + 1) - (A - 1) * cosw + sqA2a;
+                a1 =  2 * ((A - 1) - (A + 1) * cosw);
+                a2 =      (A + 1) - (A - 1) * cosw - sqA2a;
+            } else {
+                b0 =  A * ((A + 1) - (A - 1) * cosw + sqA2a);
+                b1 =  2 * A * ((A - 1) - (A + 1) * cosw);
+                b2 =  A * ((A + 1) - (A - 1) * cosw - sqA2a);
+                a0 =      (A + 1) + (A - 1) * cosw + sqA2a;
+                a1 = -2 * ((A - 1) + (A + 1) * cosw);
+                a2 =      (A + 1) + (A - 1) * cosw - sqA2a;
+            }
+
+            return { b0, b1, b2, a0, a1, a2, alpha };
+        }
+
+        function freqResponse(coeff, freq) {
+            const { b0, b1, b2, a0, a1, a2 } = coeff;
+            const w    = 2 * Math.PI * freq / FS;
+            const cosw = Math.cos(w);
+            const sinw = Math.sin(w);
+            const cos2w = Math.cos(2 * w);
+            const sin2w = Math.sin(2 * w);
+
+            const nR = b0 + b1 * cosw + b2 * cos2w;
+            const nI = b1 * sinw + b2 * sin2w;
+            const dR = a0 + a1 * cosw + a2 * cos2w;
+            const dI = a1 * sinw + a2 * sin2w;
+
+            const mag2 = (nR * nR + nI * nI) / Math.max(dR * dR + dI * dI, 1e-30);
+            return 10 * Math.log10(Math.max(mag2, 1e-30));
+        }
+
+        function updateAll() {
+            const gain = parseFloat(inGain.value);
+            const S    = parseFloat(inSlope.value);
+            currentFc  = fcFromSlider(parseFloat(inFc.value));
+
+            updateActivePreset(S);
+
+            const A     = Math.pow(10, gain / 40);
+            const inner = (A + 1 / A) * (1 / S - 1) + 2;
+            const Q     = inner > 0 ? 1 / Math.sqrt(inner) : Infinity;
+
+            valGain.textContent  = (gain >= 0 ? '+' : '') + gain.toFixed(1) + ' dB';
+            valSlope.textContent = S.toFixed(2);
+            valFc.textContent    = formatHz(currentFc);
+            resA.textContent     = A.toFixed(3);
+            resQ.textContent     = Q === Infinity ? 'MAX' : Q.toFixed(3);
+
+            const coeff = calcBiquad(currentType, A, Q, currentFc);
+            resAlpha.textContent = coeff.alpha.toFixed(4);
+
+            const { b0, b1, b2, a0, a1, a2 } = coeff;
+            cB0.textContent = (b0 / a0).toFixed(5);
+            cB1.textContent = (b1 / a0).toFixed(5);
+            cB2.textContent = (b2 / a0).toFixed(5);
+            cA1.textContent = (a1 / a0).toFixed(5);
+            cA2.textContent = (a2 / a0).toFixed(5);
+
+            const isBoost = gain >= 0;
+            const typeLabel = currentType === 'high' ? 'High Shelf' : 'Low Shelf';
+            eqChart.data.datasets[0].label       = typeLabel + ' — Magnitud';
+            eqChart.data.datasets[0].borderColor = isBoost ? colorTerracotta : colorSage;
+            eqChart.data.datasets[0].backgroundColor = isBoost
+                ? 'rgba(184,92,80,0.08)'
+                : 'rgba(155,176,143,0.08)';
+
+            const pts = [];
+            for (let i = 0; i <= 240; i++) {
+                const freq = 20 * Math.pow(1000, i / 240);
+                pts.push({ x: freq, y: freqResponse(coeff, freq) });
+            }
+            eqChart.data.datasets[0].data = pts;
+            eqChart.update();
+
+            updateFeedback(S, Q, gain, currentFc, currentType);
+        }
+
+        function updateFeedback(S, Q, gain, fc, type) {
+            const qStr    = Q === Infinity ? '∞' : Q.toFixed(3);
+            const fcStr   = formatHz(fc);
+            const gainAbs = Math.abs(gain).toFixed(1);
+            const zone    = type === 'high' ? 'altas frecuencias' : 'bajas frecuencias';
+            let msg = '';
+
+            if (S === 1.0) {
+                msg = `S = 1.0 → Q = 0.707 (Butterworth). Transición máximamente plana a partir de ${fcStr}, sin coloración en ${zone}.`;
+            } else if (S < 0.5) {
+                msg = `S = ${S.toFixed(1)}, Q = ${qStr}. Pendiente muy suave: el cambio de ${gainAbs} dB se distribuye en varias octavas alrededor de ${fcStr}. Ideal para procesos de masterización transparente.`;
+            } else if (S < 1.0) {
+                msg = `S = ${S.toFixed(1)}, Q = ${qStr}. Pendiente sub-Butterworth: transición gradual alrededor de ${fcStr}. Sonido natural y sin fatiga auditiva.`;
+            } else if (S <= 2.0) {
+                msg = `S = ${S.toFixed(1)}, Q = ${qStr}. Por encima de Butterworth: el cambio de ${gainAbs} dB ocurre rápidamente en ${fcStr}. Puede aparecer un leve pre-énfasis antes de la rodilla.`;
+            } else {
+                msg = `⚠️ S = ${S.toFixed(1)}, Q = ${qStr}. Pendiente muy agresiva: se generan resonancias tipo campana justo antes de la rodilla en ${fcStr}. Audible como coloración artificial.`;
+            }
+
+            infoFeedback.innerHTML = `<strong>💡 Análisis de la Curva</strong><span>${msg}</span>`;
+            infoFeedback.style.background = S > 2
+                ? 'linear-gradient(135deg, var(--terracotta-light) 0%, var(--terracotta) 100%)'
+                : 'linear-gradient(135deg, var(--sage-light) 0%, var(--sage) 100%)';
+        }
+
+        inGain.addEventListener('input', updateAll);
+        inSlope.addEventListener('input', updateAll);
+        inFc.addEventListener('input', updateAll);
+
+        updateAll();
+    </script>
+</body>
+</html>
